@@ -3,14 +3,24 @@ import Container from 'react-bootstrap/Container';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import Offcanvas from 'react-bootstrap/Offcanvas';
-import { Navigate, Outlet, useNavigate } from 'react-router';
+import {  Outlet, useNavigate } from 'react-router';
 import { useAuth } from './Hooks/auth';
 import Login from './routes/Login';
+import { getAuth, signOut } from 'firebase/auth';
 
 
 function App() {
   const navigate = useNavigate()
   const  {login}  = useAuth()
+  const auth = getAuth()
+
+  const handleLogout = () => {
+    signOut(auth).then(() => {
+      navigate('/login')
+    }).catch((error) => {
+      alert(error.message)
+    }); 
+  }
   return (
     login ?
       <>
@@ -31,13 +41,13 @@ function App() {
               </Offcanvas.Header>
               <Offcanvas.Body>
 
-                <Nav className="justify-content-around sm:h-100 sm:flex-col sm:justify-content-between h-screen   flex-grow-1 pe-3">
+                <Nav className="justify-content-lg-around h-100 flex-column flex-lg-row justify-content-between flex-grow-1 pe-3">
                   <Nav>
                     <Nav.Link eventKey={1} onClick={() => navigate('/dashboard')}>Home</Nav.Link>
                     <Nav.Link eventKey={2} onClick={() => navigate('/users')}>Users</Nav.Link>
                     <Nav.Link eventKey={3} onClick={() => navigate('/transactions')}>Transactions</Nav.Link>
                   </Nav>
-                  <Nav.Link eventKey={4} onClick={() => navigate('/login')}>
+                  <Nav.Link eventKey={4} onClick={() => handleLogout()}>
                     Logout
                   </Nav.Link>
                 </Nav>
