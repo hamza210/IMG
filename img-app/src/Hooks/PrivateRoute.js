@@ -1,13 +1,19 @@
 import React from 'react'
 import {useAuth} from './auth'
 import { Navigate, Outlet } from 'react-router'
+import Spinner from 'react-bootstrap/Spinner';
 
 const PrivateRoute = () => {
-    const {isLogin} = useAuth()
+    const {login,checkingStatus} = useAuth()
+    
+    if(checkingStatus){
+      return <Spinner />
+    }
+
   return (
     <div>
       {
-        isLogin ?
+        login ?
         <Outlet /> :
         <Navigate to='/login' />
       }

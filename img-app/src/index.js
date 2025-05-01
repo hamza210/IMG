@@ -16,8 +16,9 @@ import PrivateRoute from './Hooks/PrivateRoute';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
+    <>
+    <Route path="/login" element={<Login />} />
     <Route path="/" element={<App />}>
-      <Route path="/login" element={<Login />} />
       
       <Route path="/dashboard" element={<PrivateRoute />}>
         <Route path="/dashboard" element={<Dashboard />} />
@@ -29,6 +30,7 @@ const router = createBrowserRouter(
         <Route path="/transactions" element={<Transactions />} />
       </Route>
     </Route>
+    </>
   )
 );
 
