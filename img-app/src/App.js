@@ -7,11 +7,12 @@ import {  Outlet, useNavigate } from 'react-router';
 import { useAuth } from './Hooks/auth';
 import Login from './routes/Login';
 import { getAuth, signOut } from 'firebase/auth';
+import { Spinner } from 'react-bootstrap';
 
 
 function App() {
   const navigate = useNavigate()
-  const  {login}  = useAuth()
+  const  {login,checkingStatus}  = useAuth()
   const auth = getAuth()
 
   const handleLogout = () => {
@@ -26,7 +27,7 @@ function App() {
       <>
         <Navbar collapseOnSelect bg="primary" data-bs-theme="dark" key={'sm'} expand={'sm'} className="mx-auto mb-3">
           <Container fluid>
-            <Navbar.Brand onClick={() => navigate('/dashboard')}>IMG</Navbar.Brand>
+            <Navbar.Brand style={{cursor:'pointer'}} onClick={() => navigate('/dashboard')}>IMG</Navbar.Brand>
             <Navbar.Toggle aria-controls={`offcanvasNavbar-expand-sm`} />
             <Navbar.Offcanvas
 
@@ -57,7 +58,11 @@ function App() {
         </Navbar>
         <Outlet />
       </>
-      : <Login />
+      : checkingStatus ? (  
+        <div className='d-flex justify-content-center align-items-center vh-100'>
+        <Spinner />
+          </div>  
+        ) : <Login />
   );
 }
 
