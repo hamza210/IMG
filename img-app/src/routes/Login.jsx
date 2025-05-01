@@ -3,6 +3,7 @@ import { Form, Button, Alert } from "react-bootstrap";
 import "./Login.css";
 import { getAuth, signInWithEmailAndPassword  } from "firebase/auth";
 import { useNavigate } from "react-router";
+import { toast } from "react-toastify";
 
 const Login = () => {
   const auth = getAuth()
@@ -18,13 +19,28 @@ const Login = () => {
     setLoading(true);
     signInWithEmailAndPassword (auth, inputUsername, inputPassword)
     .then((userCredential) => {
-      const user = userCredential.user;
+      toast.success("Login succesfully", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: false,
+        progress: undefined,
+        theme: "light",
+            });
       navigate('/dashboard')
       setLoading(false);
     })
     .catch((error) => {
-      console.log(error)
-      alert(error.message)
+      toast.error(error.message, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: false,
+        progress: undefined,
+        theme: "light",
+            });
       setLoading(false);
       setShow(true);
       setTimeout(() => {

@@ -40,7 +40,6 @@ const Transaction = () => {
     if (querySnapshot) {
       let arr = [];
       querySnapshot.forEach((doc) => {
-        console.log(doc);
         arr.push(doc.data());
       });
       setTranactions(arr);

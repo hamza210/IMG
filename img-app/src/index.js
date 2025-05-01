@@ -13,6 +13,7 @@ import Dashboard from './routes/Dashboard';
 import User from './routes/User';
 import Transactions from './routes/Transactions';
 import PrivateRoute from './Hooks/PrivateRoute';
+import { ToastContainer } from 'react-toastify';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -36,5 +37,8 @@ const router = createBrowserRouter(
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
+  <>
   <RouterProvider router={router} />
+  <ToastContainer />
+  </>
 );
