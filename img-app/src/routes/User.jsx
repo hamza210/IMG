@@ -6,7 +6,6 @@ import {
   query,
   where,
   addDoc,
-  Timestamp,
 } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import { db } from "../firebase.config";

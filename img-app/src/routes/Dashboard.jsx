@@ -6,7 +6,9 @@ import {
   query,
   where,
   addDoc,
-  Timestamp,
+  updateDoc,
+  arrayUnion,
+  doc,
 } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import { db } from "../firebase.config";
@@ -19,10 +21,16 @@ const Dashboard = () => {
   const auth = getAuth();
   const [users, setUsers] = useState([]);
   const [searchUserText, setSearchUserText] = useState("");
+  const [selecteduser, setSelecteduser] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
-    const [totalAmount, setTotalAmount] = useState(0);
+  const [totalAmount, setTotalAmount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [date,setDate] = useState(`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2,'0')}`)
+  const [date, setDate] = useState(
+    `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(
+      2,
+      "0"
+    )}`
+  );
   const [loadPaidData, setLoadPaidData] = useState(false);
   const [transactionsAddPopup, setTransactionsAddPopup] = useState(false);
   const [error, setError] = useState(false);
@@ -36,26 +44,27 @@ const Dashboard = () => {
     );
 
     return () => clearTimeout(delayDebounce);
-  }, [searchUserText,loadPaidData,date]);
+  }, [searchUserText, loadPaidData, date]);
 
   const handleFetch = async () => {
+    setUsers([]);
     setLoading(true);
     const usersRef = collection(db, "users");
     const dates = new Date(date);
     const monthYear = dates.toLocaleString("en-US", {
       month: "long",
-      year: "numeric"
-    }); 
-    let q
-    if(loadPaidData){
-      q=      query(
+      year: "numeric",
+    });
+    let q;
+    if (loadPaidData) {
+      q = query(
         usersRef,
         where("Name", ">=", searchUserText.toLowerCase()),
         where("Name", "<=", searchUserText.toLowerCase() + "\uf8ff"),
-        where('transactions','array-contains',monthYear)
+        where("transactions", "array-contains", monthYear)
       );
-    } else{
-      q=      query(
+    } else {
+      q = query(
         usersRef,
         where("Name", ">=", searchUserText.toLowerCase()),
         where("Name", "<=", searchUserText.toLowerCase() + "\uf8ff")
@@ -68,18 +77,20 @@ const Dashboard = () => {
     if (querySnapshot) {
       let arr = [];
       querySnapshot.forEach((doc) => {
-        if(!loadPaidData){
-            const transactions = doc.data().transactions || [];
-            if(transactions.length == 0){
-              arr.push(doc.data())
-            }
-            transactions.map((t) => {
-              if(new Date(t).getMonth() + 1 != new Date(date).getMonth() + 1 && new Date(t).getFullYear() == new Date(date).getFullYear() ){
-                arr.push(doc.data())
-              }
-            })
-          }else{
-          arr.push(doc.data());
+        if (!loadPaidData) {
+          const a = new Date(date);
+          const b = a.toLocaleString("en-US", {
+            month: "long",
+            year: "numeric",
+          });
+          const transactions = doc.data().transactions || [];
+          if (transactions.length == 0) {
+            arr.push({ ...doc.data(), id: doc.id });
+          } else if (!transactions.includes(b)) {
+            arr.push({ ...doc.data(), id: doc.id });
+          }
+        } else {
+          arr.push({ ...doc.data(), id: doc.id });
         }
       });
       setUsers(arr);
@@ -91,15 +102,25 @@ const Dashboard = () => {
     }
   };
 
-  const handleSubmit = async (e, username, contact, address) => {
+  const handleSubmit = async (e, amount, mode) => {
     e.preventDefault();
-    const docRef = await addDoc(collection(db, "users"), {
-      Name: username.toLowerCase(),
-      Address: address,
-      Contact_no: contact,
+    const dates = new Date();
+    const monthYears = dates.toLocaleString("en-US", {
+      month: "long",
+      year: "numeric",
+    });
+    const userdocRef = await updateDoc(doc(db, "users", selecteduser.id), {
+      transactions: arrayUnion(monthYears),
+    });
+    const docRef = await addDoc(collection(db, "transaction"), {
+      Amount: amount.toLowerCase(),
+      Mode: mode,
+      createdBy: auth.currentUser.email,
+      Date: new Date(),
+      UserName: selecteduser.Name,
     });
     if (docRef) {
-      toast.success("User added succesfully", {
+      toast.success("Transaction added succesfully", {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,
@@ -108,9 +129,10 @@ const Dashboard = () => {
         progress: undefined,
         theme: "light",
       });
+      handleFetch();
       setTransactionsAddPopup(false);
     } else {
-      toast.error("User added failed", {
+      toast.error("Transaction added failed", {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,
@@ -126,7 +148,6 @@ const Dashboard = () => {
     <div>
       {transactionsAddPopup && (
         <div className="position-absolute">
-          {" "}
           <AddTransactionModal
             setTransactionsAddPopup={setTransactionsAddPopup}
             handleSubmit={handleSubmit}
@@ -143,16 +164,15 @@ const Dashboard = () => {
           <p className="text-danger lead">Please Try Again Later</p>
         </div>
       ) : (
-        <div style={{height:'calc(100dvh - 100px)',overflow:'hidden'}}>
-          <header className=" w-100 p-2 d-flex flex-row row-gap-3 justify-content-around">
-            {/* <button
-              onClick={() => setTransactionsAddPopup(true)}
-              className="btn btn-primary d-block"
-            >
-              Add User
-            </button> */}
+        <div style={{ height: "calc(100dvh - 100px)", overflow: "hidden" }}>
+          <header className=" w-100 p-2 d-flex flex-row column-gap-3 justify-content-around">
             <p className="lead mb-1">Total Users: {totalCount}</p>
-            <input className="p-1" value={date}  onChange={(e) => setDate(e.target.value)} type="month" />
+            <input
+              className="p-1"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              type="month"
+            />
           </header>
           <section className=" w-100 p-2">
             <InputGroup className="mb-3">
@@ -166,19 +186,51 @@ const Dashboard = () => {
               />
             </InputGroup>
           </section>
-          <section style={{columnGap:'1px'}} className="d-flex w-100">
-            <div onClick={() => setLoadPaidData(false)} className={`w-50 bg-${loadPaidData ? 'primary' :'success'} text-white text-center py-2`}>
+          <section style={{ columnGap: "1px" }} className="d-flex w-100">
+            <div
+              onClick={() => setLoadPaidData(false)}
+              className={`w-50 bg-${
+                loadPaidData ? "primary" : "success"
+              } text-white text-center py-2`}
+            >
               Not Paid
             </div>
-            <div onClick={() => setLoadPaidData(true)} className={`w-50 bg-${loadPaidData ? 'success' :'primary'} text-white text-center py-2`}>
-               Paid
+            <div
+              onClick={() => setLoadPaidData(true)}
+              className={`w-50 bg-${
+                loadPaidData ? "success" : "primary"
+              } text-white text-center py-2`}
+            >
+              Paid
             </div>
           </section>
-          <main style={{overflowY:'scroll',height:'calc(100% - 180px)',paddingBottom:'20px'}} className="d-flex flex-wrap gap-3 w-100 p-2">
+          <main
+            style={{
+              overflowY: "scroll",
+              height: "calc(100% - 180px)",
+              paddingBottom: "20px",
+            }}
+            className="d-flex flex-wrap gap-3 w-100 p-2"
+          >
             {users.map((user, index) => {
               return (
-                <div style={{height:'166px'}} className="w-100" key={index}>
-                  <UserComponent addBtn={((new Date().getMonth() + 1 == new Date(date).getMonth() + 1) && (new Date().getFullYear() == new Date(date).getFullYear())) && !loadPaidData ? true:  false} user={user} />
+                <div style={{ height: "166px" }} className="w-100" key={index}>
+                  <UserComponent
+                    handleClick={(user) => {
+                      setSelecteduser(user);
+                      setTransactionsAddPopup(true);
+                    }}
+                    addBtn={
+                      new Date().getMonth() + 1 ==
+                        new Date(date).getMonth() + 1 &&
+                      new Date().getFullYear() ==
+                        new Date(date).getFullYear() &&
+                      !loadPaidData
+                        ? true
+                        : false
+                    }
+                    user={user}
+                  />
                 </div>
               );
             })}

@@ -1,11 +1,11 @@
 import React from "react";
 import { Card } from "react-bootstrap";
 
-const UserComponent = ({ user,addBtn }) => {
+const UserComponent = ({ user,addBtn,handleClick }) => {
   return (
     <Card style={{backgroundColor:'#ACDDDE',position:'relative'}}>
       <Card.Body>
-        <div className="btn btn-sm btn-primary" style={{position:'absolute',top:'15px',right:'15px',display:!addBtn ? 'none' : 'flex'}}>
+        <div onClick={() => handleClick(user)} className="btn btn-sm btn-primary" style={{position:'absolute',top:'15px',right:'15px',display:!addBtn ? 'none' : 'flex'}}>
           Paid
         </div>
         <div>
