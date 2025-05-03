@@ -63,9 +63,8 @@ const Transaction = () => {
           <p className="text-danger lead">Please Try Again Later</p>
         </div>
       ) : (
-        <div>
+        <div style={{height:'calc(100dvh - 100px)',overflow:'hidden'}}>
           <header className=" w-100 p-2 d-flex flex-column gap-3 justify-content-between">
-            <button className="btn btn-primary d-block">Add Transaction</button>
             <p className="lead mb-1">Total Transaction: {transactions.length}</p>
             <p className="lead mb-1">Total Amount: {totalAmount}</p>
           </header>
@@ -85,7 +84,7 @@ const Transaction = () => {
               />
             </InputGroup>
           </section>
-          <main className="d-flex flex-wrap gap-3 w-100 p-2">
+          <main style={{overflowY:'scroll',height:'calc(100% - 180px)',paddingBottom:'20px'}} className="d-flex flex-wrap gap-3 w-100 p-2">
             {transactions.map((transaction, index) => {
               return (
                 <div className="w-100" key={index}>

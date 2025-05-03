@@ -113,7 +113,7 @@ const User = () => {
           <p className="text-danger lead">Please Try Again Later</p>
         </div>
       ) : (
-        <div style={{height:'90dvh',overflow:'hidden'}}>
+        <div style={{height:'calc(100dvh - 100px)',overflow:'hidden'}}>
           <header className=" w-100 p-2 d-flex flex-column gap-3 justify-content-between">
             <button
               onClick={() => setUserAddPopup(true)}
@@ -135,7 +135,7 @@ const User = () => {
               />
             </InputGroup>
           </section>
-          <main style={{overflowY:'scroll',height:'66dvh'}} className="d-flex flex-wrap gap-3 w-100 p-2">
+          <main style={{overflowY:'scroll',height:'calc(100% - 180px)',paddingBottom:'20px'}} className="d-flex flex-wrap gap-3 w-100 p-2">
             {users.map((user, index) => {
               return (
                 <div className="w-100" key={index}>
