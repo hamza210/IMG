@@ -41,13 +41,18 @@ const Dashboard = () => {
   const handleFetch = async () => {
     setLoading(true);
     const usersRef = collection(db, "users");
+    const dates = new Date(date);
+    const monthYear = dates.toLocaleString("en-US", {
+      month: "long",
+      year: "numeric"
+    }); 
     let q
     if(loadPaidData){
       q=      query(
         usersRef,
         where("Name", ">=", searchUserText.toLowerCase()),
         where("Name", "<=", searchUserText.toLowerCase() + "\uf8ff"),
-        where('transactions','array-contains',Timestamp.fromDate(new Date(date)))
+        where('transactions','array-contains',monthYear)
       );
     } else{
       q=      query(
@@ -68,12 +73,12 @@ const Dashboard = () => {
             if(transactions.length == 0){
               arr.push(doc.data())
             }
-            transactions.some((t) => {
-              if(new Date(t.toDate()).getMonth() + 1 == new Date(date).getMonth() + 1 && new Date(t.toDate()).getFullYear() == new Date(date).getFullYear() ){
-                  arr.push(doc.data())
+            transactions.map((t) => {
+              if(new Date(t).getMonth() + 1 != new Date(date).getMonth() + 1 && new Date(t).getFullYear() == new Date(date).getFullYear() ){
+                arr.push(doc.data())
               }
             })
-        }else{
+          }else{
           arr.push(doc.data());
         }
       });
@@ -169,7 +174,6 @@ const Dashboard = () => {
                Paid
             </div>
           </section>
-          {console.log(((new Date().getMonth() + 1 != new Date(date).getMonth() + 1) && (new Date().getFullYear() != new Date(date).getFullYear())))}
           <main style={{overflowY:'scroll',height:'calc(100% - 180px)',paddingBottom:'20px'}} className="d-flex flex-wrap gap-3 w-100 p-2">
             {users.map((user, index) => {
               return (

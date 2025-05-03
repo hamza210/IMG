@@ -6,6 +6,7 @@ import {
   query,
   where,
   addDoc,
+  Timestamp,
 } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import { db } from "../firebase.config";
@@ -59,15 +60,18 @@ const User = () => {
     }
   };
 
-  console.log(auth)
-
   const handleSubmit = async (e, username, contact, address) => {
     e.preventDefault();
+    const date = new Date();
+const monthYear = date.toLocaleString("en-US", {
+  month: "long",
+  year: "numeric"
+}); 
     const docRef = await addDoc(collection(db, "users"), {
       Name: username.toLowerCase(),
       Address: address,
       Contact_no: contact,
-      transactions:[],
+      transactions:[monthYear],
       createdBy: String(auth.currentUser.email)
     });
     if (docRef) {
