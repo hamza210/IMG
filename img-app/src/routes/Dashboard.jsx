@@ -113,7 +113,7 @@ const Dashboard = () => {
       transactions: arrayUnion(monthYears),
     });
     const docRef = await addDoc(collection(db, "transaction"), {
-      Amount: amount.toLowerCase(),
+      Amount: Number(amount),
       Mode: mode,
       createdBy: auth.currentUser.email,
       Date: new Date(),
