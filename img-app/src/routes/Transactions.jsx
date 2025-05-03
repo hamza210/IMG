@@ -27,8 +27,8 @@ const Transaction = () => {
     const usersRef = collection(db, "transaction");
     const q = query(
       usersRef,
-      where("Name", ">=", searchTransText.toLowerCase()),
-      where("Name", "<=", searchTransText.toLowerCase() + "\uf8ff")
+      where("UserName", ">=", searchTransText.toLowerCase()),
+      where("UserName", "<=", searchTransText.toLowerCase() + "\uf8ff")
     );
 
     const snapshot = await getAggregateFromServer(q, {

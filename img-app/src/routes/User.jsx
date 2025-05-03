@@ -10,7 +10,6 @@ import {
 import React, { useEffect, useState } from "react";
 import { db } from "../firebase.config";
 import AddUserModal from "../Component/AddUserModal";
-import { v4 as uuidv4 } from "uuid";
 import { Form, InputGroup, Spinner } from "react-bootstrap";
 import UserComponent from "../Component/UserComponent";
 import { toast } from "react-toastify";
@@ -60,15 +59,19 @@ const User = () => {
     }
   };
 
+  console.log(auth)
+
   const handleSubmit = async (e, username, contact, address) => {
     e.preventDefault();
     const docRef = await addDoc(collection(db, "users"), {
       Name: username.toLowerCase(),
       Address: address,
       Contact_no: contact,
-      id: uuidv4(),
+      transactions:[],
+      createdBy: String(auth.currentUser.email)
     });
     if (docRef) {
+      handleFetch()
       toast.success("User added succesfully", {
         position: "top-right",
         autoClose: 3000,

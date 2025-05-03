@@ -1,11 +1,188 @@
-import React from 'react'
+import { getAuth } from "firebase/auth";
+import {
+  collection,
+  getCountFromServer,
+  getDocs,
+  query,
+  where,
+  addDoc,
+  Timestamp,
+} from "firebase/firestore";
+import React, { useEffect, useState } from "react";
+import { db } from "../firebase.config";
+import { Form, InputGroup, Spinner } from "react-bootstrap";
+import UserComponent from "../Component/UserComponent";
+import { toast } from "react-toastify";
+import AddTransactionModal from "../Component/AddTransactionModal";
 
 const Dashboard = () => {
+  const auth = getAuth();
+  const [users, setUsers] = useState([]);
+  const [searchUserText, setSearchUserText] = useState("");
+  const [totalCount, setTotalCount] = useState(0);
+    const [totalAmount, setTotalAmount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [date,setDate] = useState(`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2,'0')}`)
+  const [loadPaidData, setLoadPaidData] = useState(false);
+  const [transactionsAddPopup, setTransactionsAddPopup] = useState(false);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const delayDebounce = setTimeout(
+      () => {
+        handleFetch();
+      },
+      searchUserText.length > 0 ? 1000 : 0
+    );
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchUserText,loadPaidData,date]);
+
+  const handleFetch = async () => {
+    setLoading(true);
+    const usersRef = collection(db, "users");
+    let q
+    if(loadPaidData){
+      q=      query(
+        usersRef,
+        where("Name", ">=", searchUserText.toLowerCase()),
+        where("Name", "<=", searchUserText.toLowerCase() + "\uf8ff"),
+        where('transactions','array-contains',Timestamp.fromDate(new Date(date)))
+      );
+    } else{
+      q=      query(
+        usersRef,
+        where("Name", ">=", searchUserText.toLowerCase()),
+        where("Name", "<=", searchUserText.toLowerCase() + "\uf8ff")
+      );
+    }
+
+    const snapshot = await getCountFromServer(q);
+    setTotalCount(snapshot.data().count);
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot) {
+      let arr = [];
+      querySnapshot.forEach((doc) => {
+        if(!loadPaidData){
+            const transactions = doc.data().transactions || [];
+            if(transactions.length == 0){
+              arr.push(doc.data())
+            }
+            transactions.some((t) => {
+              if(new Date(t.toDate()).getMonth() + 1 == new Date(date).getMonth() + 1 && new Date(t.toDate()).getFullYear() == new Date(date).getFullYear() ){
+                  arr.push(doc.data())
+              }
+            })
+        }else{
+          arr.push(doc.data());
+        }
+      });
+      setUsers(arr);
+      setLoading(false);
+      setError(false);
+    } else {
+      setLoading(false);
+      setError(true);
+    }
+  };
+
+  const handleSubmit = async (e, username, contact, address) => {
+    e.preventDefault();
+    const docRef = await addDoc(collection(db, "users"), {
+      Name: username.toLowerCase(),
+      Address: address,
+      Contact_no: contact,
+    });
+    if (docRef) {
+      toast.success("User added succesfully", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: false,
+        progress: undefined,
+        theme: "light",
+      });
+      setTransactionsAddPopup(false);
+    } else {
+      toast.error("User added failed", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: false,
+        progress: undefined,
+        theme: "light",
+      });
+    }
+  };
+
   return (
     <div>
-      Dashboard
+      {transactionsAddPopup && (
+        <div className="position-absolute">
+          {" "}
+          <AddTransactionModal
+            setTransactionsAddPopup={setTransactionsAddPopup}
+            handleSubmit={handleSubmit}
+          />{" "}
+        </div>
+      )}
+      {loading ? (
+        <div className="d-flex justify-content-center align-items-center vh-100">
+          <Spinner />
+        </div>
+      ) : error ? (
+        <div className="d-flex flex-column justify-content-start align-items-center vh-100">
+          <p className="text-danger display-4">Something went wrong! </p>
+          <p className="text-danger lead">Please Try Again Later</p>
+        </div>
+      ) : (
+        <div style={{height:'calc(100dvh - 100px)',overflow:'hidden'}}>
+          <header className=" w-100 p-2 d-flex flex-row row-gap-3 justify-content-around">
+            {/* <button
+              onClick={() => setTransactionsAddPopup(true)}
+              className="btn btn-primary d-block"
+            >
+              Add User
+            </button> */}
+            <p className="lead mb-1">Total Users: {totalCount}</p>
+            <input className="p-1" value={date}  onChange={(e) => setDate(e.target.value)} type="month" />
+          </header>
+          <section className=" w-100 p-2">
+            <InputGroup className="mb-3">
+              <InputGroup.Text id="basic-addon1">Search</InputGroup.Text>
+              <Form.Control
+                value={searchUserText}
+                onChange={(e) => setSearchUserText(e.target.value)}
+                placeholder="Username"
+                aria-label="Username"
+                aria-describedby="basic-addon1"
+              />
+            </InputGroup>
+          </section>
+          <section style={{columnGap:'1px'}} className="d-flex w-100">
+            <div onClick={() => setLoadPaidData(false)} className={`w-50 bg-${loadPaidData ? 'primary' :'success'} text-white text-center py-2`}>
+              Not Paid
+            </div>
+            <div onClick={() => setLoadPaidData(true)} className={`w-50 bg-${loadPaidData ? 'success' :'primary'} text-white text-center py-2`}>
+               Paid
+            </div>
+          </section>
+          {console.log(((new Date().getMonth() + 1 != new Date(date).getMonth() + 1) && (new Date().getFullYear() != new Date(date).getFullYear())))}
+          <main style={{overflowY:'scroll',height:'calc(100% - 180px)',paddingBottom:'20px'}} className="d-flex flex-wrap gap-3 w-100 p-2">
+            {users.map((user, index) => {
+              return (
+                <div style={{height:'166px'}} className="w-100" key={index}>
+                  <UserComponent addBtn={((new Date().getMonth() + 1 == new Date(date).getMonth() + 1) && (new Date().getFullYear() == new Date(date).getFullYear())) && !loadPaidData ? true:  false} user={user} />
+                </div>
+              );
+            })}
+          </main>
+        </div>
+      )}
     </div>
-  )
-}
+  );
+};
 
-export default Dashboard
+export default Dashboard;
