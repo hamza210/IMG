@@ -101,7 +101,7 @@ const monthYear = date.toLocaleString("en-US", {
   return (
     <div>
       {userAddPopup && (
-        <div className="position-absolute">
+        <div className="position-absolute top-0">
           {" "}
           <AddUserModal
             setUserAddPopup={setUserAddPopup}

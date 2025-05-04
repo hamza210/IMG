@@ -66,9 +66,7 @@ const Dashboard = () => {
       where("Date", ">=", start),
       where("Date", "<", end)
     );
-    const userq = query(
-      usersRef
-    );
+    const userq = query(usersRef);
 
     const snapshot = await getAggregateFromServer(q, {
       totalTransaction: sum("Amount"),
@@ -148,15 +146,24 @@ const Dashboard = () => {
     }
   };
 
-  const handleSubmit = async (e, amount, mode) => {
+  const handleSubmit = async (e, amount, mode, advancemonths) => {
     e.preventDefault();
+    let months = Array.from({ length: advancemonths }, (m,index) => {
+      const mdate = new Date(new Date().setMonth(new Date().getMonth() + index));
+      const mmonth = mdate.toLocaleString("en-US", {
+        month: "long",
+        year: "numeric",
+      });
+      return mmonth
+    });
     const dates = new Date();
     const monthYears = dates.toLocaleString("en-US", {
       month: "long",
       year: "numeric",
     });
+    let trans = advancemonths ? [...selecteduser.transactions,...months] : [...selecteduser.transactions,monthYears]
     const userdocRef = await updateDoc(doc(db, "users", selecteduser.id), {
-      transactions: arrayUnion(monthYears),
+      transactions: trans,
     });
     const docRef = await addDoc(collection(db, "transaction"), {
       Amount: Number(amount),
@@ -219,7 +226,7 @@ const Dashboard = () => {
       }
     </style>
   `;
-  let total = 0
+    let total = 0;
     const table = `
     ${styles}
     <table border={1}>
@@ -233,15 +240,21 @@ const Dashboard = () => {
             </tr>
           </thead>
           <tbody>
-            ${monthlyUser?.map((user) => {
-              return `<tr>
+            ${monthlyUser
+              ?.map((user) => {
+                return `<tr>
               <td scope="col">${user?.Name?.toUpperCase()}</td>
               <td scope="col">${user?.Contact_no}</td>
-              <td scope="col">${monthlyTransactions?.find((t) => {
-                let a = t?.UserName?.toLowerCase() === user?.Name?.toLowerCase()
-                total += a ? t.Amount : 0
-                  return t?.UserName?.toLowerCase() === user?.Name?.toLowerCase()
-                  })?.Amount || 0}</td>
+              <td scope="col">${
+                monthlyTransactions?.find((t) => {
+                  let a =
+                    t?.UserName?.toLowerCase() === user?.Name?.toLowerCase();
+                  total += a ? t.Amount : 0;
+                  return (
+                    t?.UserName?.toLowerCase() === user?.Name?.toLowerCase()
+                  );
+                })?.Amount || 0
+              }</td>
                 <td scope="col">${new Date(date).toLocaleString("en-US", {
                   month: "long",
                   year: "numeric",
@@ -250,7 +263,8 @@ const Dashboard = () => {
                   ${user?.transactions?.includes(b) ? "PAID" : "UNPAID"}
                 </td>
               </tr>`;
-            }).join("")}
+              })
+              .join("")}
           </tbody>
           <tfoot>
             <tr>
@@ -276,7 +290,7 @@ const Dashboard = () => {
   return (
     <div>
       {transactionsAddPopup && (
-        <div className="position-absolute">
+        <div className="position-absolute top-0">
           <AddTransactionModal
             setTransactionsAddPopup={setTransactionsAddPopup}
             handleSubmit={handleSubmit}
@@ -294,11 +308,11 @@ const Dashboard = () => {
         </div>
       ) : (
         <div style={{ height: "calc(100dvh - 100px)", overflow: "hidden" }}>
-          <header className=" w-100 p-2 d-flex flex-row column-gap-4 justify-content-even">
+          <header className=" w-100 p-2 d-flex flex-row justify-content-even">
             <p className="lead mb-1">Total Users: {totalCount}</p>
 
             <input
-              className="p-1"
+              className="p-1 mx-3"
               value={date}
               onChange={(e) => setDate(e.target.value)}
               type="month"
@@ -348,7 +362,7 @@ const Dashboard = () => {
           <main
             style={{
               overflowY: "scroll",
-              height: "calc(100% - 180px)",
+              height: "calc(100% - 250px)",
               paddingBottom: "20px",
             }}
             className="d-flex flex-wrap gap-3 w-100 p-2"
