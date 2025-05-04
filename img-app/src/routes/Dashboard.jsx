@@ -13,6 +13,7 @@ import {
   Timestamp,
   sum,
 } from "firebase/firestore";
+import * as XLSX from "xlsx";
 import React, { useEffect, useState } from "react";
 import { db } from "../firebase.config";
 import { Form, InputGroup, Spinner } from "react-bootstrap";
@@ -148,20 +149,24 @@ const Dashboard = () => {
 
   const handleSubmit = async (e, amount, mode, advancemonths) => {
     e.preventDefault();
-    let months = Array.from({ length: advancemonths }, (m,index) => {
-      const mdate = new Date(new Date().setMonth(new Date().getMonth() + index));
+    let months = Array.from({ length: advancemonths }, (m, index) => {
+      const mdate = new Date(
+        new Date().setMonth(new Date().getMonth() + index)
+      );
       const mmonth = mdate.toLocaleString("en-US", {
         month: "long",
         year: "numeric",
       });
-      return mmonth
+      return mmonth;
     });
     const dates = new Date();
     const monthYears = dates.toLocaleString("en-US", {
       month: "long",
       year: "numeric",
     });
-    let trans = advancemonths ? [...selecteduser.transactions,...months] : [...selecteduser.transactions,monthYears]
+    let trans = advancemonths
+      ? [...selecteduser.transactions, ...months]
+      : [...selecteduser.transactions, monthYears];
     const userdocRef = await updateDoc(doc(db, "users", selecteduser.id), {
       transactions: trans,
     });
@@ -198,93 +203,42 @@ const Dashboard = () => {
   };
 
   const handleExport = () => {
-    const ab = new Date(date);
-    const b = ab.toLocaleString("en-US", {
-      month: "long",
-      year: "numeric",
-    });
-    const styles = `
-    <style>
-      table {
-        border-collapse: collapse;
-        width: 100%;
-        font-family: Open, sans-serif;
-      }
-      th, td {
-        border: 1px solid #888;
-        padding: 8px;
-        text-align: left;
-      }
-      td{
-      font-size:12px;
-      }
-      th {
-        font-weight: bold;
-      }
-      tfoot td {
-        font-weight: bold;
-      }
-    </style>
-  `;
-    let total = 0;
-    const table = `
-    ${styles}
-    <table border={1}>
-          <thead>
-            <tr>
-              <th scope="col">Name</th>
-              <th scope="col">Contact No</th>
-              <th scope="col">Amount</th>
-              <th scope="col">Month</th>
-              <th scope="col">Paid/Unpaid</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${monthlyUser
-              ?.map((user) => {
-                return `<tr>
-              <td scope="col">${user?.Name?.toUpperCase()}</td>
-              <td scope="col">${user?.Contact_no}</td>
-              <td scope="col">${
-                monthlyTransactions?.find((t) => {
-                  let a =
-                    t?.UserName?.toLowerCase() === user?.Name?.toLowerCase();
-                  total += a ? t.Amount : 0;
-                  return (
-                    t?.UserName?.toLowerCase() === user?.Name?.toLowerCase()
-                  );
-                })?.Amount || 0
-              }</td>
-                <td scope="col">${new Date(date).toLocaleString("en-US", {
-                  month: "long",
-                  year: "numeric",
-                })}</td>
-                <td scope="col">
-                  ${user?.transactions?.includes(b) ? "PAID" : "UNPAID"}
-                </td>
-              </tr>`;
-              })
-              .join("")}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colspan="2">Total Amount</td>
-          <td colspan="1">${total}</td>
-            </tr>
-          </tfoot>
-        </table>
-      `;
-    const blob = new Blob([table], { type: "application/vnd.ms-excel" });
-    const url = URL.createObjectURL(blob);
-
-    // Trigger download
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${b}_Monthly.xls`; // .xls to open in Excel
-    a.click();
-
-    // Clean up
-    URL.revokeObjectURL(url);
+      const ab = new Date(date);
+      const b = ab.toLocaleString("en-US", {
+        month: "long",
+        year: "numeric",
+      });
+    
+      let total = 0;
+    
+      const data = monthlyUser.map((user) => {
+        const transaction = monthlyTransactions?.find((t) => {
+          const match = t?.UserName?.toLowerCase() === user?.Name?.toLowerCase();
+          total += match ? t.Amount : 0;
+          return match;
+        });
+    
+        return {
+          Name: user?.Name?.toUpperCase(),
+          "Contact No": user?.Contact_no,
+          Amount: transaction?.Amount || 0,
+          Status: user?.transactions?.includes(b) ? "PAID" : "UNPAID",
+        };
+      });
+    
+      // Add total row
+      data.push({
+        Name: "TOTAL",
+        "Contact No": "",
+        Amount: total,
+        Status: "",
+      });
+    
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, `${b} Monthly Report`);
+    
+      XLSX.writeFile(wb, `${b}_Report.xlsx`);
   };
 
   return (

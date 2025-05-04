@@ -59,7 +59,7 @@ const User = () => {
     }
   };
 
-  const handleSubmit = async (e, username, contact, address) => {
+  const handleSubmit = async (e, username, contact) => {
     e.preventDefault();
     const date = new Date();
 const monthYear = date.toLocaleString("en-US", {
@@ -68,7 +68,6 @@ const monthYear = date.toLocaleString("en-US", {
 }); 
     const docRef = await addDoc(collection(db, "users"), {
       Name: username.toLowerCase(),
-      Address: address,
       Contact_no: contact,
       transactions:[monthYear],
       createdBy: String(auth.currentUser.email)

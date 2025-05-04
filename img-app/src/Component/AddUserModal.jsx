@@ -5,7 +5,6 @@ import "../routes/Login.css";
 const AddUserModal = ({handleSubmit,setUserAddPopup}) => {
 
   const [inputUsername, setInputUsername] = useState("");
-  const [inputUserAddress, setInputUserAddress] = useState("");
   const [inputContact, setInputContact] = useState("");
 
   return (
@@ -15,7 +14,7 @@ const AddUserModal = ({handleSubmit,setUserAddPopup}) => {
     >
       <div style={{backgroundColor:'rgba(0,0,0,0.6)',zIndex:'1'}} className="sign-in__backdrop"></div>
 
-      <Form style={{zIndex:'2'}} className="shadow p-4 bg-white rounded" onSubmit={(e) => handleSubmit(e,inputUsername,inputContact,inputUserAddress)}>
+      <Form style={{zIndex:'2'}} className="shadow p-4 bg-white rounded" onSubmit={(e) => handleSubmit(e,inputUsername,inputContact)}>
         
         <div className="h4 mb-2 text-center">ADD USER</div>
        
@@ -40,16 +39,6 @@ const AddUserModal = ({handleSubmit,setUserAddPopup}) => {
             required
           />
         </Form.Group>
-        <Form.Group className="mb-2" controlId="address">
-          <Form.Label>Address</Form.Label>
-          <Form.Control
-            type="text"
-            value={inputUserAddress}
-            placeholder="Address"
-            onChange={(e) => setInputUserAddress(e.target.value)}
-          />
-        </Form.Group>
-
        
           <Button className="w-100 my-2" variant="primary" type="submit">
             Add user
