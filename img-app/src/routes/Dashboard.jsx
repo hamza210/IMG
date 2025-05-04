@@ -9,6 +9,9 @@ import {
   updateDoc,
   arrayUnion,
   doc,
+  getAggregateFromServer,
+  Timestamp,
+  sum,
 } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import { db } from "../firebase.config";
@@ -19,6 +22,8 @@ import AddTransactionModal from "../Component/AddTransactionModal";
 
 const Dashboard = () => {
   const auth = getAuth();
+  const [monthlyTransactions, setmonthlyTransactions] = useState([]);
+  const [monthlyUser, setMonthlyUser] = useState([]);
   const [users, setUsers] = useState([]);
   const [searchUserText, setSearchUserText] = useState("");
   const [selecteduser, setSelecteduser] = useState([]);
@@ -45,6 +50,47 @@ const Dashboard = () => {
 
     return () => clearTimeout(delayDebounce);
   }, [searchUserText, loadPaidData, date]);
+
+  useEffect(() => {
+    handleTransactionData();
+  }, [date]);
+
+  const handleTransactionData = async () => {
+    const transref = collection(db, "transaction");
+    const usersRef = collection(db, "users");
+    const dateObj = new Date(date);
+    const start = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
+    const end = new Date(dateObj.getFullYear(), dateObj.getMonth() + 1, 1);
+    const q = query(
+      transref,
+      where("Date", ">=", start),
+      where("Date", "<", end)
+    );
+    const userq = query(
+      usersRef
+    );
+
+    const snapshot = await getAggregateFromServer(q, {
+      totalTransaction: sum("Amount"),
+    });
+    setTotalAmount(snapshot.data().totalTransaction);
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot) {
+      let arr = [];
+      querySnapshot.forEach((doc) => {
+        arr.push(doc.data());
+      });
+      setmonthlyTransactions(arr);
+    }
+    const userquerySnapshot = await getDocs(userq);
+    if (userquerySnapshot) {
+      let arr = [];
+      userquerySnapshot.forEach((doc) => {
+        arr.push({ ...doc.data(), id: doc.id });
+      });
+      setMonthlyUser(arr);
+    }
+  };
 
   const handleFetch = async () => {
     setUsers([]);
@@ -116,7 +162,7 @@ const Dashboard = () => {
       Amount: Number(amount),
       Mode: mode,
       createdBy: auth.currentUser.email,
-      Date: new Date(),
+      Date: Timestamp.fromDate(new Date()),
       UserName: selecteduser.Name,
     });
     if (docRef) {
@@ -155,26 +201,25 @@ const Dashboard = () => {
       table {
         border-collapse: collapse;
         width: 100%;
-        font-family: Arial, sans-serif;
+        font-family: Open, sans-serif;
       }
       th, td {
         border: 1px solid #888;
         padding: 8px;
         text-align: left;
       }
+      td{
+      font-size:12px;
+      }
       th {
-        background-color: #f2f2f2;
         font-weight: bold;
       }
       tfoot td {
         font-weight: bold;
-        background-color: #e0e0e0;
-      }
-      tbody tr:nth-child(even) {
-        background-color: #f9f9f9;
       }
     </style>
   `;
+  let total = 0
     const table = `
     ${styles}
     <table border={1}>
@@ -188,22 +233,29 @@ const Dashboard = () => {
             </tr>
           </thead>
           <tbody>
-            ${users?.map((user) => {
+            ${monthlyUser?.map((user) => {
               return `<tr>
-                <td scope="col">${user.Name}</td>
-                <td scope="col">${user.Contact_no}</td>
-                <td scope="col">${user.Amount || "100"}</td>
-                <td scope="col">${new Date(date).toDateString()}</td>
+              <td scope="col">${user?.Name?.toUpperCase()}</td>
+              <td scope="col">${user?.Contact_no}</td>
+              <td scope="col">${monthlyTransactions?.find((t) => {
+                let a = t?.UserName?.toLowerCase() === user?.Name?.toLowerCase()
+                total += a ? t.Amount : 0
+                  return t?.UserName?.toLowerCase() === user?.Name?.toLowerCase()
+                  })?.Amount || 0}</td>
+                <td scope="col">${new Date(date).toLocaleString("en-US", {
+                  month: "long",
+                  year: "numeric",
+                })}</td>
                 <td scope="col">
-                  ${user.transactions.includes(b) ? "PAID" : "UNPAID"}
+                  ${user?.transactions?.includes(b) ? "PAID" : "UNPAID"}
                 </td>
               </tr>`;
-            })}
+            }).join("")}
           </tbody>
           <tfoot>
             <tr>
               <td colspan="2">Total Amount</td>
-          <td colspan="3">10000</td>
+          <td colspan="1">${total}</td>
             </tr>
           </tfoot>
         </table>
@@ -242,8 +294,9 @@ const Dashboard = () => {
         </div>
       ) : (
         <div style={{ height: "calc(100dvh - 100px)", overflow: "hidden" }}>
-          <header className=" w-100 p-2 d-flex flex-row column-gap-3 justify-content-around">
+          <header className=" w-100 p-2 d-flex flex-row column-gap-4 justify-content-even">
             <p className="lead mb-1">Total Users: {totalCount}</p>
+
             <input
               className="p-1"
               value={date}
@@ -251,6 +304,9 @@ const Dashboard = () => {
               type="month"
             />
           </header>
+          <div className="px-2 w-full">
+            <p className="lead mb-1">Total Amount: {totalAmount}</p>
+          </div>
           <section className=" w-100 p-2">
             <InputGroup className="mb-3">
               <InputGroup.Text id="basic-addon1">Search</InputGroup.Text>
