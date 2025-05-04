@@ -144,6 +144,83 @@ const Dashboard = () => {
     }
   };
 
+  const handleExport = () => {
+    const ab = new Date(date);
+    const b = ab.toLocaleString("en-US", {
+      month: "long",
+      year: "numeric",
+    });
+    const styles = `
+    <style>
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-family: Arial, sans-serif;
+      }
+      th, td {
+        border: 1px solid #888;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+      }
+      tfoot td {
+        font-weight: bold;
+        background-color: #e0e0e0;
+      }
+      tbody tr:nth-child(even) {
+        background-color: #f9f9f9;
+      }
+    </style>
+  `;
+    const table = `
+    ${styles}
+    <table border={1}>
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Contact No</th>
+              <th scope="col">Amount</th>
+              <th scope="col">Month</th>
+              <th scope="col">Paid/Unpaid</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${users?.map((user) => {
+              return `<tr>
+                <td scope="col">${user.Name}</td>
+                <td scope="col">${user.Contact_no}</td>
+                <td scope="col">${user.Amount || "100"}</td>
+                <td scope="col">${new Date(date).toDateString()}</td>
+                <td scope="col">
+                  ${user.transactions.includes(b) ? "PAID" : "UNPAID"}
+                </td>
+              </tr>`;
+            })}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2">Total Amount</td>
+          <td colspan="3">10000</td>
+            </tr>
+          </tfoot>
+        </table>
+      `;
+    const blob = new Blob([table], { type: "application/vnd.ms-excel" });
+    const url = URL.createObjectURL(blob);
+
+    // Trigger download
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${b}_Monthly.xls`; // .xls to open in Excel
+    a.click();
+
+    // Clean up
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div>
       {transactionsAddPopup && (
@@ -185,6 +262,14 @@ const Dashboard = () => {
                 aria-describedby="basic-addon1"
               />
             </InputGroup>
+          </section>
+          <section className="mx-2 mb-2">
+            <div
+              onClick={() => handleExport()}
+              className="w-100 btn btn-info btn-md"
+            >
+              Export Data
+            </div>
           </section>
           <section style={{ columnGap: "1px" }} className="d-flex w-100">
             <div
